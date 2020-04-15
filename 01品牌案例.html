@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>品牌案例</title>
+    <link rel="stylesheet" href="./lib/bootstrap-3.3.7.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 添加头部 -->
+        <div class="panel panel-primary">
+              <div class="panel-heading">
+                    <h3 class="panel-title">添加品牌</h3>
+              </div>
+              <div class="panel-body form-inline">
+                    <label for="">
+                        Id：
+                        <input type="text" class="form-control" v-model='id'>
+                    </label>
+                    <label for="">
+                        name：
+                        <input type="text" class="form-control" v-model='name' @keyup.enter="add" v-focus v-color="'pink'">
+                    </label>
+                    <input type="button" value="添加" class="btn btn-primary" @click="add"> 
+                    <label for="">
+                        搜索关键字:
+                        <input type="text" class="form-control"  v-model='keywords' >
+                    </label>
+              </div>
+        </div>
+        
+        <!-- 使用bs3快捷键 bs3-table -->
+        <!-- 表格部分 -->
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>name</th>
+                    <th>ctime</th>
+                    <th><a href="#" >操作</a></th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- v-for="(item,index) in list" search(keywords)就相当于list-->
+                <tr v-for="(item,index) in search(keywords)" :key="item.id">
+                    <td v-color1>{{item.id}}</td>
+                    <td>{{item.name}}</td>
+                    <td>{{item.ctime | dataFormat}}</td>  <!-- Vue过滤器进行时间格式化 -->
+                    <td><a href="#" @click='del(index)'>delete</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+<script src="./lib/vue-2.4.0.js"></script>
+<script>
+    //全局过滤器
+    //Vue过滤器进行时间格式化
+    //yyyy-mm-dd  或者  yyyy-mm-dd hh:mm:ss
+    Vue.filter('dataFormat',function(data){
+        var dt = new Date();
+        var y = dt.getFullYear();
+        var m = (dt.getMonth()+1).toString().padStart(2,'0');
+        var d = (dt.getDate()).toString().padStart(2,'0');
+        var hh = (dt.getHours()).toString().padStart(2,'0');
+        var mm = (dt.getMinutes()).toString().padStart(2,'0');
+        var ss = (dt.getSeconds()).toString().padStart(2,'0');
+        return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
+    })
+    //补零操作 ES6中字符串方法 String.prototype.padStart(maxlength,fillString)
+    //maxlength:要填充的长度.  fillString:要填充的内容.
+    //将月日时分秒进行补零操作，需要用toString()方法转换为字符串
+
+    //小知识点、配置键盘事件
+    //通过点击f2进行添加的键盘设置  @keyup.f2 = "add"
+    //Vue.config.keyCodes.f2 = 113;
+
+
+    //自定义指令 v-XXXXX  
+    //全局定义 Vue.directive('指令名称',对象)
+    //对象中有3个钩子函数(bind,inserted,update)
+    //每个钩子函数中有两个参数，第一个参数是el:获取绑定元素，这是固定的。第2个参数是binding
+    //当页面刷新时，使name的输入框获取焦点  v-focus
+    Vue.directive('focus',{
+        bind:function(el,binding){
+            el.focus();
+        },
+        inserted:function(el,binding){
+            el.focus();
+        },
+        update:function(el,binding){
+
+        }
+    })
+    //注意！ 只要是操作JS中的方法，就必须在inserted中写1遍
+    //如果只是操作属性，只需要添加到bind方法中即可 v-color 自定义颜色属性
+    Vue.directive('color',{
+        bind:function(el,binding){
+            el.style.color = binding.value;
+        },
+        inserted:function(el,binding){
+
+        },
+        update:function(el,binding){
+
+        }
+    })
+    let vm = new Vue({
+        el:"#app",
+        data:{
+            id:'',
+            name:'',
+            ctime:'',
+            keywords:'',
+            list:[
+                {id:1,name:"apple",ctime:new Date()},
+                {id:2,name:"pear",ctime:new Date()},
+                {id:3,name:"banana",ctime:new Date()}
+            ]
+        },
+        methods:{
+            //添加按钮
+            add(){
+                this.list.push({id:this.id,name:this.name,ctime:new Date()})
+            },
+            //删除操作
+            del(index){
+                for(var i=0;i<this.list.length;i++){
+                    if(index === i){
+                        this.list.splice(i,1);
+                    }
+                }
+            },
+            //搜索关键字
+            //filter(函数(当前元素的值)) 循环 返回一个数组
+            //数组方法includes()用来判断一个数组是否包含一个指定的值，如果是返回 true，否则false
+            //搜索操作先循环遍历所有的元素,如果找到元素的名字包含关键字，就返回一个包含关键字元素的数组
+            search(keywords){
+                return this.list.filter(item =>{
+                    if(item.name.includes(this.keywords)){
+                        return item; //返回值是一个数组
+                    }
+                })
+            }
+        },
+        //自定义指令 v-color1
+        //私有定义
+        directives:{
+            'color1': {
+                bind:function(el,binding){
+                    el.style.color = 'green'
+                }
+            }
+            //简写方法 v-color2="'pink'"
+            //简写方式中，只有一个函数，这个函数包含了bind和inserted两个方法
+            // color2:function(el,binding){
+            //     el.style.color = binding.value
+            // }
+            
+        }
+    })
+</script>
+<script>
+    //步骤
+    //第一步、安装Bootstrap 3 Snippets快速生成 有代码提示
+    //使用bs3快捷键 bs3-table 快速创建表格
+    //bs3-label 快速创建表单
+    //向表格中添加内容，在Vue实例中添加数组对象list，并通过v-for="(item index) in list"循环遍历,通过{{item-XX}}渲染到页面上
+
+    //第二步、删除操作
+    //给delete通过v-on绑定方法 @click='del(index)'，通过循环遍历list来找到和当前的元素相同索引的元素
+    //用数组的splice()方法删除  
+    //splice(index,howmany,item1,.....,itemX); index 必需。规定从何处添加/删除元素; 
+    //howmany 可选。规定应该删除多少元素。必须是数字，但可以是 "0"。如果未规定此参数，则删除从 index 开始到原数组结尾的所有元素; 
+    //item1, ..., itemX  可选。要添加到数组的新元素
+
+    //第三步、通过全局过滤器实现格式化时间
+    //全局过滤器  Vue.filter('dataFormat',function(data){})
+    //{{item.ctime | dataFormat}}
+    
+    //第四步、补零操作
+    //ES6中字符串方法 String.prototype.padStart(maxlength,fillString)
+    //maxlength:要填充的长度.  fillString:要填充的内容.
+    //将月日时分秒进行补零操作，需要用toString()方法转换为字符串
+
+    //第五步、键盘时间的修饰符
+    //点击键盘enter，可以实现添加事件 @keyup.enter="add"
+    //通过点击f2进行添加的键盘设置  @keyup.f2 = "add"
+    //Vue.config.keyCodes.f2 = 113;
+
+    //第六步、当页面刷新，给name的输入框获取焦点 v-focus
+    //自定义指令 v-XXXXX  
+    //全局定义 Vue.directive('指令名称',对象)
+    //对象中有3个钩子函数(bind,inserted,update)
+    //每个钩子函数中有两个参数，第一个参数是el:获取绑定元素，这是固定的。第2个参数是binding 
+    //注意！ 只要是操作JS中的方法，就必须在inserted中写1遍 v-focus
+    //如果只是操作属性，只需要添加到bind方法中即可 v-color 自定义颜色属性
+
+    //第七步、搜索关键字操作
+    //进行双向数据绑定   给搜索关键字的input输入框添加v-model='keywords'
+    //绑定search(index)方法
+    //对元素列表进行循环遍历  通过v-for="(item,index) in search(keywords)" 
+    //通过filter(函数(当前元素的值)) 循环 返回一个数组
+    //数组方法includes()用来判断一个数组是否包含一个指定的值，如果是返回 true，否则false
+    //搜索操作先循环遍历所有的元素,如果找到元素的名字包含关键字，就返回一个包含关键字元素的数组
+</script>
+</html>
